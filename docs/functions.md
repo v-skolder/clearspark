@@ -13,6 +13,7 @@ import clearspark.functions as cf
   - [`save_data`](#save_data)
 - [Transform](#transform)
   - [`with_categories`](#with_categories)
+  - [`with_buckets`](#with_buckets)
 
 ---
 
@@ -174,5 +175,59 @@ cf.with_categories(
     group_column_nm="region",
     categories={"latam": ["BR", "AR", "CL"]},
     default="other",
+)
+```
+
+### `with_buckets`
+
+```python
+with_buckets(
+    df: DuckSparkDataFrame,
+    origin_value_column: Union[str, DuckSparkColumn],
+    group_column_nm: str,
+    buckets: Union[list[int], list[float]] = Field(min_length=1),
+    default: str = "missing",
+    suffix: Optional[str] = "",
+) -> DataFrame
+```
+
+Adds a bucketed (binned) column based on numeric ranges.
+
+Sorts `buckets` ascending and assigns each row a label based on which range its value in `origin_value_column` falls into. Ranges are half-open (`[lower, upper)`), so a value equal to a boundary belongs to the bucket that starts at that boundary. Values below the first or above the last boundary still receive a label (open-ended ranges); only null or non-matching values fall back to `default`.
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `df` | `DuckSparkDataFrame` | — | The PySpark DataFrame to transform. |
+| `origin_value_column` | `Union[str, DuckSparkColumn]` | — | Numeric column to bucket, as a column name or `DuckSparkColumn` expression. |
+| `group_column_nm` | `str` | — | Name of the new bucketed column to create. |
+| `buckets` | `Union[list[int], list[float]]` | required, non-empty | Boundary values defining the ranges. Sorted internally, so order doesn't matter. |
+| `default` | `str` | `"missing"` | Label assigned to null or non-matching values. |
+| `suffix` | `Optional[str]` | `""` | Text appended to every generated label (e.g. a unit like `"kg"`). |
+
+**Returns**
+
+`DataFrame` — with the new bucketed column added.
+
+**Examples**
+
+```python
+# Bucket ages into ranges
+cf.with_buckets(
+    df,
+    origin_value_column="age",
+    group_column_nm="age_group",
+    buckets=[18, 30, 60],
+)
+# labels: "00. <18", "01. 18 - 30", "02. 30 - 60", "03. >=60"
+
+# Bucket with a unit suffix
+cf.with_buckets(
+    df,
+    origin_value_column="weight_kg",
+    group_column_nm="weight_group",
+    buckets=[50, 70, 90],
+    suffix="kg",
 )
 ```

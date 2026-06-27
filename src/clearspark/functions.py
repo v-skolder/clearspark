@@ -7,7 +7,8 @@ from clearspark.annotations import (
 
 from typing import (
     Optional, 
-    Union
+    Union,
+    Any
 )
 
 from pydantic import (
@@ -20,15 +21,18 @@ from pyspark.sql import (
     SparkSession
 )
 
+import pyspark.sql.functions as F
+
 __all__ = [
     "load_data",
-    "save_data"
+    "save_data",
+    "with_categories"
 ]
 
 # UTILS
 
 def _is_catalog_path(path: str):
-    return '/' not in path
+    return "/" not in path
 
 # FUNCTIONS
 
@@ -87,8 +91,8 @@ def load_data(
 def save_data(
         df: DuckSparkDataFrame,
         data_path: str,
-        data_format: str = 'delta',
-        mode: str = 'overwrite',
+        data_format: str = "delta",
+        mode: str = "overwrite",
         options: Optional[dict[str, str]] = None,
         partition_by: Optional[list[str]] = None,
 ) -> None:
@@ -96,9 +100,9 @@ def save_data(
 
     Args:
         df: The PySpark DataFrame to save.
-        data_path: The destination path. If it contains no '/', saves as a catalog table; otherwise, as a file path.
-        data_format: The format to save in (e.g., 'delta', 'parquet'). Defaults to 'delta'.
-        mode: The save mode ('overwrite', 'append', 'ignore', 'error'). Defaults to 'overwrite'.
+        data_path: The destination path. If it contains no "/", saves as a catalog table; otherwise, as a file path.
+        data_format: The format to save in (e.g., "delta", "parquet"). Defaults to "delta".
+        mode: The save mode ("overwrite", "append", "ignore", "error"). Defaults to "overwrite".
         options: Optional dictionary of additional options for the writer.
         partition_by: Optional list of column names to partition by.
 
@@ -127,3 +131,25 @@ def save_data(
         writer.save(data_path)
 
     print(f"Data saved successfully to '{data_path}' in '{data_format}' format with mode '{mode}'.")
+
+def with_categories(
+    df: DuckSparkDataFrame,
+    origin_value_column: Union[str, DuckSparkColumn],
+    new_column_nm: str,
+    categories: dict[str, list[str]],
+    default: str = "uncategorized"
+) -> DataFrame:
+
+    expr = None
+    for label, values in categories.items():
+        condition = \
+            (F.col(origin_value_column) if isinstance(origin_value_column, str) else origin_value_column) \
+            .isin(values)
+        
+        if expr is None:
+            expr = F.when(condition, F.lit(label))
+
+        else:
+            expr = expr.when(condition, F.lit(label))
+
+    retut

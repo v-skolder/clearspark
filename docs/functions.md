@@ -11,6 +11,8 @@ import clearspark.functions as cf
 - [Load / Save](#load--save)
   - [`load_data`](#load_data)
   - [`save_data`](#save_data)
+- [Transform](#transform)
+  - [`with_categories`](#with_categories)
 
 ---
 
@@ -112,4 +114,65 @@ cf.save_data(df, "/data/events", data_format="parquet", mode="append")
 
 # Save partitioned by columns
 cf.save_data(df, "db.events", partition_by=["year", "month"])
+```
+
+---
+
+## Transform
+
+Functions for deriving or reshaping columns on an existing DataFrame.
+
+### `with_categories`
+
+```python
+with_categories(
+    df: DuckSparkDataFrame,
+    origin_value_column: Union[str, DuckSparkColumn],
+    group_column_nm: str,
+    categories: dict[str, list[str]] = Field(min_length=1),
+    default: str = "uncategorized",
+) -> DataFrame
+```
+
+Adds a categorical column based on value-to-label mappings.
+
+For each row, the value in `origin_value_column` is checked against each list of values in `categories`. The first matching label is assigned; rows that match none of the categories receive `default`.
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `df` | `DuckSparkDataFrame` | — | The PySpark DataFrame to transform. |
+| `origin_value_column` | `Union[str, DuckSparkColumn]` | — | Column to categorize, as a column name or `DuckSparkColumn` expression. |
+| `group_column_nm` | `str` | — | Name of the new categorical column to create. |
+| `categories` | `dict[str, list[str]]` | required, non-empty | Mapping of label -> list of values that belong to that label. |
+| `default` | `str` | `"uncategorized"` | Label assigned to rows that match no category. |
+
+**Returns**
+
+`DataFrame` — with the new categorical column added.
+
+**Examples**
+
+```python
+# Categorize HTTP status codes into groups
+cf.with_categories(
+    df,
+    origin_value_column="status_code",
+    group_column_nm="status_group",
+    categories={
+        "success": ["200", "201", "204"],
+        "client_error": ["400", "404"],
+        "server_error": ["500", "502", "503"],
+    },
+)
+
+# Use a custom default label for unmatched rows
+cf.with_categories(
+    df,
+    origin_value_column="country",
+    group_column_nm="region",
+    categories={"latam": ["BR", "AR", "CL"]},
+    default="other",
+)
 ```

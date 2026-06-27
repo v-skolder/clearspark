@@ -73,7 +73,7 @@ def load_data(
 
     reader = (spark_session or SparkSession.getActiveSession()).read.format(format)
 
-    df = reader.table(path) if _is_catalog_path else reader.load(path)
+    df = reader.table(path) if _is_catalog_path(path) else reader.load(path)
 
     if select_cols is not None:
         df = df.select(select_cols)

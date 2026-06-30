@@ -29,7 +29,8 @@ classifiers = [
 ]
 dependencies = [
     "pyspark>=3.5.0",
-    "pydantic>=2.0"
+    "pydantic>=2.0",
+    "pandas>=>=3.0.3"
 ]
 
 [project.optional-dependencies]
